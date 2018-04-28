@@ -14,5 +14,4 @@ blessings is indeed a nice library. however, it is too high level. term.io gives
 you access to not only simple high level functionallity but also 
 the nitty gritty of tty control.
 
-## documentation
-coming soon
+## [documentation](https://github.com/PyDever/termio/tree/master/docs)
