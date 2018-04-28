@@ -2,9 +2,87 @@
 import sys, termios
 import tty, fcntl, os
 
-from getch import getch
+class fg:
+      black = "\u001b[30m"
+      red = "\u001b[31m"
+      green = "\u001b[32m"
+      yellow = "\u001b[33m"
+      blue = "\u001b[34m"
+      magenta = "\u001b[35m"
+      cyan = "\u001b[36m"
+      white = "\u001b[37m"
+      bblack = "\u001b[30;1m"
+      bred = "\u001b[31;1m"
+      bgreen = "\u001b[32;1m"
+      byellow = "\u001b[33;1m"
+      bblue = "\u001b[34;1m"
+      bmagenta = "\u001b[35;1m"
+      bcyan = "\u001b[36;1m"
+      bwhite = "\u001b[37;1m"
+      reset = "\u001b[0m"
 
-from asciix import bg, fg, dec 
+class bg:
+      black = "\u001b[40m"
+      red = "\u001b[41m"
+      green = "\u001b[42m"
+      yellow = "\u001b[43m"
+      blue = "\u001b[44m"
+      magenta = "\u001b[45m"
+      cyan = "\u001b[46m"
+      white = "\u001b[47m"
+      bblack = "\u001b[40;1m"
+      bred = "\u001b[41;1m"
+      bgreen = "\u001b[42;1m"
+      byellow = "\u001b[43;1m"
+      bblue = "\u001b[44;1m"
+      bmagenta = "\u001b[45;1m"
+      bcyan = "\u001b[46;1m"
+      bwhite = "\u001b[47;1m"
+      reset = "\u001b[0m"
+class dec:
+      bold = "\u001b[1m"
+      underline = "\u001b[4m"
+      reverse = "\u001b[7m"
+      reset = "\u001b[0m"
+
+class _Getch:
+    """Gets a single character from standard input.  Does not echo to the screen."""
+    def __init__(self):
+        try:
+            self.impl = _GetchWindows()
+        except ImportError:
+            self.impl = _GetchUnix()
+
+    def __call__(self): return self.impl()
+
+
+class _GetchUnix:
+    def __init__(self):
+        import tty, sys
+
+    def __call__(self):
+        import sys, tty, termios
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+
+
+class _GetchWindows:
+    def __init__(self):
+        import msvcrt
+
+    def __call__(self):
+        import msvcrt
+        return msvcrt.getch()
+
+
+getch = _Getch()
+
 
 class Terminal (object):
 
@@ -133,7 +211,7 @@ class Terminal (object):
         self.__flush_output_stream__(self.fileno)
 
     def flush_inp (self):
-        self.__get_input_stream__(self.fileno)
+        self.__flush_input_stream__(self.fileno)
 
     """ there is really no reason for this method """
     def getattribs (self): # this public method will wrap the private one for tcgetattr
