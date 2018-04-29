@@ -49,8 +49,12 @@ term.echo("hello, %s" % name)
 
 ## basic API
 ```Terminal.clear()```
-<br>
 * clear the screen
+<br>
+
+```Terminal.reset()```
+* reset colors and cursor position
+<br>
 
 
 
