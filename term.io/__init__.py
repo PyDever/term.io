@@ -1,10 +1,11 @@
 
-import termios
-import tty, fcntl
-import os
 import sys
+import os
+import termios
+import tty
+import fcntl
 
-class fg:
+class foreground_colors:
       black = "\u001b[30m"
       red = "\u001b[31m"
       green = "\u001b[32m"
@@ -23,7 +24,7 @@ class fg:
       bwhite = "\u001b[37;1m"
       reset = "\u001b[0m"
 
-class bg:
+class background_colors:
       black = "\u001b[40m"
       red = "\u001b[41m"
       green = "\u001b[42m"
@@ -41,106 +42,92 @@ class bg:
       bcyan = "\u001b[46;1m"
       bwhite = "\u001b[47;1m"
       reset = "\u001b[0m"
-class dec:
+
+class decorations:
       bold = "\u001b[1m"
       underline = "\u001b[4m"
       reverse = "\u001b[7m"
       reset = "\u001b[0m"
 
 
-
 class Terminal (object):
 
     def __init__ (self):
 
-        """ 
-        initialization function for the termincal
-        class. this function hosts basic meta
-        information for terminal io
-        """
-
+        # get the UNIX/POSIX file descriptor
         self.fileno = sys.stdin.fileno()
-        self.attribs = termios.tcgetattr(
-            self.fileno)
 
+        # store the where the cursor is supposed to be
         self.cursor_location = [0,0,1]
 
-        """ implement ASCII and ANSI codes for color control """
-        self.fg = fg 
-        self.bg = bg
-        self.dec = dec
+        # store the ansi color codes
+        self.fg = foreground_colors
+        self.bg = background_colors
+        self.dec = decorations
 
-    """ implement a simple termios private wrapper """
-    def __get_attributes__ (self, file_descriptor):
-        """
-        usage:
-            assuming public wrapper:
-                self.__get_attributes__()
+        # store the ansi sequences
+        self.ansi_codes = {}
 
-        """
-        attributes_and_settings = termios.tcgetattr(file_descriptor)
+        self.ansi_codes['clear-screen'] = "\x1b[2J\x1b[H"
+        self.ansi_codes['move-cursor'] = "\x1b[#;#H\x1b[H"
 
-        return attributes_and_settings
 
-    def __set_attributes__ (self, file_descriptor, when):
-        """
-        usage:
-            assuming public wrapper:
-                self.__set_attributes__(file_descriptor,
-                    termios.TCSANOW, self.__get_attributes__())
-        """
-        attributes_and_settings = self.__get_attributes__(file_descriptor)
+    """ implement the private API """
 
-        termios.tcsetattr(file_descriptor, when, attributes_and_settings)
+    def __get_attributes (self):
+        attributes = termios.tcgetattr(self.fileno)
+        return attributes
 
-    def __flush_input_stream__ (self, file_descriptor):
-        """
-        usage:
-            assuming public wrapper:
-                self.__flush_input_stream__()
-        """
-        termios.tcflush(file_descriptor, termios.TCIFLUSH)
+    def __set_attributes_now (self):
+        termios.tcsetattr(self.fileno, termios.TCSANOW,
+            self.__get_attributes())
 
-    def __flush_output_stream__ (self, file_descriptor):
-        """
-        usage:
-            assuming public wrapper:
-                self.__flush_output_stream__()
-        """
-        termios.tcflush(file_descriptor, termios.TCOFLUSH)
+    def __flush_input_stream (self):
+        termios.tcflush(self.fileno(), termios.TCIFLUSH)
 
-    def __flush_io_stream__ (self, file_descriptor):
-        """
-        usage:
-            assuming public wrapper:
-                self.__flush_io_stream__()
-        """
-        termios.tcflush(file_descriptor, termios.TCIOFLUSH)
+    def __flush_output_stream (self):
+        termios.tcflush(self.fileno, termios.TCOFLUSH)
 
-    def __enable_system_out__ (self, enable):
-        new_rules = self.__get_attributes__(self.fileno)
+    def __flush_io_stream (self):
+        termios.tcflush(self.fileno, termios.TCIOFLUSH)
+
+    def __flush_sys_io_stream (self):
+        sys.stdout.flush(); sys.stdin.flush()
+
+    def __reset (self):
+        # reset colors 
+        sys.stdout.write("\u001b[0m")
+        # flush all streams
+        self.__flush_io_stream()
+        self.__flush_sys_io_stream()
+        self.__change_cursor_location([0,0,1])
+
+    def __destroy_fileno (self):
+        self.fileno = None 
+
+    def __set_fileno (self, fd):
+        self.fileno = fd
+
+    def __clear_terminal_screen (self):
+        sys.stderr.write(self.ansi_codes['clear-screen'])
+
+    def __enable_system_output (self, enable):
+        new_rules = self.__get_attributes()
         if enable:
              new_rules[3] |= termios.ECHO
         else:
             new_rules[3] &= ~termios.ECHO
-        self.__set_attributes__(self.fileno, termios.TCSANOW)
+        self.__set_attributes()
 
-    def __get_input_stream__ (self):
-        """
-        usage:
-            assuming public wrapper:
-                self.__get_input_stream__()
-        """
-        sys.stdin.readlines()
+    def __read_input_stream (self):
+        try:
+            sys.stdin.readlines()
+        except KeyboardInterrupt:
+            self.__echo("KeyboardInterrupt detected.")
 
-    def __get_one_character__ (self):
-        """
-        usage:
-            assuming public wrapper:
-                self.__get_one_character__()
-        """    
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
+    def __read_one_character (self):
+        fd = self.fileno
+        old_settings = self.__get_attributes()
         try:
             tty.setraw(sys.stdin.fileno())
             ch = sys.stdin.read(1)
@@ -148,119 +135,57 @@ class Terminal (object):
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
 
-    def __write_string_text__ (self, string, newline = None):
-        """
-        usage:
-            assuming public wrapper:
-                self.__echo_string_text__()
-        """    
-        if newline != None:
+    def __change_cursor_location (self, location_x_y):
+        self.cursor_location = location_x_y
 
-            sys.stdout.write("\n"*newline + string + "\n"*newline)
-
-        elif newline is None:
-            sys.stdout.write(string)
-
-    def __change_cursor_location__ (self, location_array):
-        """ no usage case here """
-        """ free private unbound """
-
-        self.cursor_location = location_array
-
-    def __clear_terminal_screen__ (self):
-        sys.stderr.write("\x1b[2J\x1b[H")
-
-    def __echo__ (self, string):
+    def __echo (self, string):
 
         sys.stdout.write("\n"*self.cursor_location[1])
 
-        sys.stdout.write("    "*self.cursor_location[0]+string)
+        sys.stdout.write("    "*self.cursor_location[0]+str(string))
         sys.stdout.write("\n"*self.cursor_location[2])
 
-    """ implement some public methods that wrap the private API """
-    """ ....................................................... """
-    """ ....................................................... """
+    """ implement the private API wrapper, or public methods """
+    def get_attributes(self):
+        return self.__get_attributes()
 
-    def flush_all (self): # this public method will wrap the private one for io
-        self.__flush_io_stream__(self.fileno)
+    def update_attributes(self):
+        self.__set_attributes()
 
-        sys.stdout.flush()
+    def flushio (self):
+        self.__flush_sys_io_stream()
+        self.__flush_io_stream()
 
-        sys.stdin.flush()
+    def flushin (self):
+        self.__flush_input_stream()
 
-    def flush_out (self):
-        self.__flush_output_stream__(self.fileno)
+    def reset (self):
+        self.__reset()
 
-    def flush_inp (self):
-        self.__flush_input_stream__(self.fileno)
-
-    """ there is really no reason for this method """
-    def getattribs (self): # this public method will wrap the private one for tcgetattr
-        return self.__get_attributes__(self.fileno)
-
-    def setattribs (self, now=True):
-
-        if now is not None:
-
-            if now is True and not False:
-
-                self.__set_attributes__(self.fileno, termios.TCSANOW)
-
-            elif now is False and not True:
-
-                self.__set_attributes__(self.fileno, termios.TCSADRAIN)
-
-    def readlines (self):
-        try:
-            self.__get_input_stream__()
-        except KeyboardInterrupt:
-
-            sys.stdout.write("Input stream halted." + "\n")
-
-    def raw_input (self):
-        self.readlines()
-
-    def getch (self):
-        char = self.__get_one_character__()
-        return char
+    def flushout (self):
+        self.__flush_output_stream()
 
     def clear (self):
-        self.__clear_terminal_screen__()
+        self.__clear_terminal_screen()
 
-    def writeln (self, string, newline=None):
-        if newline is not None:
-            self.__write_string_text__(string, newline=newline)
+    def read_raw (self):
+        return self.__read_input_stream()
 
-        elif newline is None or False:
-            self.__write_string_text__(string, newline=None)
+    def read (self):
+        bytes_x = 0
+        try:
+            bytes_x = input()
+        except KeyboardInterrupt:
+            self.__echo("KeyboardInterrupt detected.")
+        return bytes_x
 
-    def enable_echo (self, enable):
-        self.__enable_system_out__(enable)
+    def getch (self):
+        return self.__read_one_character()
+
+    def move (self, loc):
+        self.__change_cursor_location(loc)
 
     def echo (self, string):
-        self.__echo__(string)
+        self.__echo(string)
 
-    def destroy_fileno (self):
-        self.fileno = None
-
-    def set_fileno (self, fd):
-        self.fileno = fd
-
-    def move_cursor (self, location):
-        self.__change_cursor_location__(location)
-
-    def sys_call (self, ansi):
-        sys.stderr.write(str(ansi))
-
-    def reset_settings (self):
-
-        self.__change_cursor_location__([0,0,1])
-
-        self.__flush_io_stream__(self.fileno)
-
-        self.__flush_output_stream__(self.fileno)
-
-        self.__flush_input_stream__(self.fileno)
-
-        sys.stdout.write("\u001b[0m")
-
+        
