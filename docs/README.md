@@ -47,7 +47,7 @@ name = term.read()
 term.echo("hello, %s" % name)
 ```
 neat! lets refresh terminal settings!
-```
+```python
 old_settings = term.get_attributes()
 
 term.fileno = sys.stdin.fileno()
