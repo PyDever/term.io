@@ -46,6 +46,13 @@ name = term.read()
 # push text to the screen
 term.echo("hello, %s" % name)
 ```
+neat! lets refresh terminal settings!
+```
+old_settings = term.get_attributes()
+
+term.fileno = sys.stdin.fileno()
+term.update_attributes(old_settings)
+```
 
 ## basic API
 ```Terminal.clear()```
