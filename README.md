@@ -10,8 +10,6 @@ to adjust terminal properties such as color, cursor position, input
 output rules, and other things.
 
 ## why not [blessings](https://github.com/erikrose/blessings)?
-blessings is indeed a nice library. however, it is too high level. term.io gives
-you access to not only simple high level functionallity but also 
-the nitty gritty of tty control.
+blessings. its just too high level
 
 ## [documentation](https://github.com/PyDever/termio/tree/master/docs)
