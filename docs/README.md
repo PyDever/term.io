@@ -97,7 +97,11 @@ term.echo("hello, %s" % name)
 * stores the ansi codes relating to cursor movement and i/o
 <br>
 
+## term.io server
+now that you are familiar with the term.io low-level API, go ahead
+and build a TCP server that only uses term.io control operations!
 
+there is a completed one in the `examples` folder.
 
 
 
