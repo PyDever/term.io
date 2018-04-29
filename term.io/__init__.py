@@ -78,9 +78,9 @@ class Terminal (object):
         attributes = termios.tcgetattr(self.fileno)
         return attributes
 
-    def __set_attributes_now (self):
+    def __set_attributes_now (self, settings_):
         termios.tcsetattr(self.fileno, termios.TCSANOW,
-            self.__get_attributes())
+            settings_)
 
     def __flush_input_stream (self):
         termios.tcflush(self.fileno(), termios.TCIFLUSH)
@@ -149,8 +149,8 @@ class Terminal (object):
     def get_attributes(self):
         return self.__get_attributes()
 
-    def update_attributes(self):
-        self.__set_attributes()
+    def update_attributes(self, settings_):
+        self.__set_attributes_now(settings_)
 
     def flushio (self):
         self.__flush_sys_io_stream()
@@ -188,4 +188,23 @@ class Terminal (object):
     def echo (self, string):
         self.__echo(string)
 
-        
+term = Terminal()
+
+old_settings = term.get_attributes()
+
+term.fileno = sys.stdin.fileno()
+term.update_attributes(old_settings)
+
+new_settings = term.get_attributes()
+
+
+term.echo(str(new_settings))
+
+
+
+
+
+
+
+
+
