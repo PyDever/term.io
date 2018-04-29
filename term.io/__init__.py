@@ -153,6 +153,14 @@ class Terminal (object):
         """
         termios.tcflush(file_descriptor, termios.TCIOFLUSH)
 
+    def __enable_system_out__ (self, enable):
+        new_rules = self.__get_attributes__(self.fileno)
+        if enable:
+             new_rules[3] |= termios.ECHO
+        else:
+            new_rules[3] &= ~termios.ECHO
+        self.__set_attributes__(self.fileno, termios.TCSANOW)
+
     def __get_input_stream__ (self):
         """
         usage:
@@ -236,9 +244,13 @@ class Terminal (object):
 
             sys.stdout.write("Input stream halted." + "\n")
 
+    def raw_input (self):
+        self.readlines()
+
     def getch (self):
         char = self.__get_one_character__()
         return char
+
 
     def writeln (self, string, newline=None):
         if newline is not None:
@@ -247,8 +259,15 @@ class Terminal (object):
         elif newline is None or False:
             self.__write_string_text__(string, newline=None)
 
+    def enable_echo (self, enable):
+        self.__enable_system_out__(enable)
+
     def echo (self, string):
         self.__echo__(string)
+
+    def destroy_fileno (self):
+        self.enable_echo(True)
+        self.fileno = None
 
     def move_cursor (self, location):
         self.__change_cursor_location__(location)
@@ -264,5 +283,4 @@ class Terminal (object):
         self.__flush_input_stream__(self.fileno)
 
         sys.stdout.write("\u001b[0m")
-
 
