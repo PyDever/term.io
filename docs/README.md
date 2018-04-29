@@ -22,6 +22,31 @@ term.echo(
 )
 
 ```
+here is a slightly more complicated example using
+actual stdin pipes. 
+```python
+from termio import Terminal
+
+# create a new controller
+term = Terminal()
+
+# flush the i/o stream
+term.flush_all() 
+
+# reset ascii settings
+term.reset_settings()
+
+# set cursor 
+term.move_cursor([2,2,2])
+
+# set text color to bright underlined yellow
+term.echo(term.fg.byellow + term.dec.underline)
+
+# begin reading
+name = term.readlines()
+
+term.echo("hello, " + name + "!")
+```
 
 ## term.io API
 
