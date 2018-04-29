@@ -167,6 +167,9 @@ class Terminal (object):
 
         self.cursor_location = location_array
 
+    def __clear_terminal_screen__ (self):
+        sys.stderr.write("\x1b[2J\x1b[H")
+
     def __echo__ (self, string):
 
         sys.stdout.write("\n"*self.cursor_location[1])
@@ -221,6 +224,8 @@ class Terminal (object):
         char = self.__get_one_character__()
         return char
 
+    def clear (self):
+        self.__clear_terminal_screen__()
 
     def writeln (self, string, newline=None):
         if newline is not None:
@@ -255,4 +260,18 @@ class Terminal (object):
         self.__flush_input_stream__(self.fileno)
 
         sys.stdout.write("\u001b[0m")
+
+term = Terminal()
+
+term.set_fileno(sys.stdin.fileno())
+term.reset_settings()
+
+term.enable_echo(True)
+
+term.echo("hello")
+term.echo("hello")
+term.echo("hello")
+
+term.getch()
+term.clear()
 
