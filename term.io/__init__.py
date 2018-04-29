@@ -1,6 +1,8 @@
 
-import sys, termios
-import tty, fcntl, os
+import termios
+import tty, fcntl
+import os
+import sys
 
 class fg:
       black = "\u001b[30m"
@@ -45,47 +47,9 @@ class dec:
       reverse = "\u001b[7m"
       reset = "\u001b[0m"
 
-class _Getch:
-    """Gets a single character from standard input.  Does not echo to the screen."""
-    def __init__(self):
-        try:
-            self.impl = _GetchWindows()
-        except ImportError:
-            self.impl = _GetchUnix()
-
-    def __call__(self): return self.impl()
-
-
-class _GetchUnix:
-    def __init__(self):
-        import tty, sys
-
-    def __call__(self):
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
-
-    def __call__(self):
-        import msvcrt
-        return msvcrt.getch()
-
-
-getch = _Getch()
 
 
 class Terminal (object):
-
 
     def __init__ (self):
 
@@ -175,8 +139,14 @@ class Terminal (object):
             assuming public wrapper:
                 self.__get_one_character__()
         """    
-        character = getch()
-        return character
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
 
     def __write_string_text__ (self, string, newline = None):
         """
@@ -266,8 +236,10 @@ class Terminal (object):
         self.__echo__(string)
 
     def destroy_fileno (self):
-        self.enable_echo(True)
         self.fileno = None
+
+    def set_fileno (self, fd):
+        self.fileno = fd
 
     def move_cursor (self, location):
         self.__change_cursor_location__(location)
