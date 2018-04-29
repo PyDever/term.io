@@ -249,6 +249,9 @@ class Terminal (object):
     def move_cursor (self, location):
         self.__change_cursor_location__(location)
 
+    def sys_call (self, ansi):
+        sys.stderr.write(str(ansi))
+
     def reset_settings (self):
 
         self.__change_cursor_location__([0,0,1])
@@ -260,18 +263,4 @@ class Terminal (object):
         self.__flush_input_stream__(self.fileno)
 
         sys.stdout.write("\u001b[0m")
-
-term = Terminal()
-
-term.set_fileno(sys.stdin.fileno())
-term.reset_settings()
-
-term.enable_echo(True)
-
-term.echo("hello")
-term.echo("hello")
-term.echo("hello")
-
-term.getch()
-term.clear()
 
