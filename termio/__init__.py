@@ -50,8 +50,91 @@ class decorations:
       reset = "\u001b[0m"
 
 
+class Stream (object):
+    
+    """ simple class to manage multiple terminal sessions """
+    def __init__ (self, terms):
+        """
+        private function:
+        purpose: initialization method
+        usage:
+            stream = termio.Stream({})
+        """
+        self.terms = terms 
+        self.term = None
+        
+    def __select (self, term_name):
+        """
+        private function:
+        purpose: selection method
+        usage:
+            self.__select(term_name)
+        """
+        self.term = self.terms[term_name]
+        
+    def __reset_all_terminals (self):
+        """
+        private function:
+        purpose: reset all streamlined terminals at once
+        usage:
+            self.__reset_all_terminals()
+        """
+        for name_of_terminal, terminal_object in self.terms.items():
+            terminal_object.reset()
+            
+    def __flush_all_terminals (self):
+        """
+        private function:
+        purpose: reset all streamlined terminals at once
+        usage:
+            self.__flush_all_terminals()
+        """
+        for name_of_terminal, terminal_object in self.terms.items():
+            terminal_object.flushio()
+            
+    def __refresh_all_terminal_settings (self):
+        """
+        private function:
+        purpose: reset all streamlined terminals at once
+        usage:
+            self.__refresh_all_terminal_settings()
+        """
+        for name_of_terminal, terminal_object in self.terms.items():
+            
+            known_good_settings = terminal_object.get_attributes()
+            fileno_new = sys.stdin.fileno()
+            
+            terminal_object.update_attributes(old_settings)
+            
+    def __set_all_terminals_to_old_settings (self):
+        """
+        private function:
+        purpose: reset all streamlined terminals at once
+        usage:
+            self.__refresh_all_terminal_settings()
+        """
+        for name_of_terminal, terminal_object in self.terms.items():
+            
+            known_good_settings = terminal_object.get_attributes()
+            fileno_new = sys.stdin.fileno()
+            
+            terminal_object.update_attributes(old_settings)
+            
+    def reset (self): self.__reset_all_terminals()
+    def flush (self): self.__flush_all_terminals()
+    def refresh (self): self.__refresh_all_terminals()
+    def old_settings (self): self.__set_all_terminals_to_old_settings()
+            
+    def select (self, term_name):
+        self.__select(term_name)
+        
+  
+        
 class Terminal (object):
-
+    """
+    simple class to handle OS-level stream intensive terminal control operations.
+    this class has both high-level functionality and a low-level advanded API.
+    """
     def __init__ (self):
 
         # get the UNIX/POSIX file descriptor
@@ -134,6 +217,12 @@ class Terminal (object):
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
+term1 = Terminal()
+term2 = Terminal()
+
+pipe = Stream({"1":term1, "2":term2})
+pipe.reset()
+
 
     def __change_cursor_location (self, location_x_y):
         self.cursor_location = location_x_y
@@ -171,13 +260,14 @@ class Terminal (object):
     def read_raw (self):
         return self.__read_input_stream()
 
-    def read (self, prompt):
+    def read (self, prompt=""):
         bytes_x = 0
         try:
             bytes_x = input(
                 "\n"*self.cursor_location[1] + "    "*self.cursor_location[0]
-                + str(prompt) + "\n"*self.cursor_location[2]
+                + str(prompt)
             )
+            sys.stdout.write("\n"*self.cursor_location[2])
         except KeyboardInterrupt:
             self.__echo("KeyboardInterrupt detected.")
         return bytes_x
@@ -191,9 +281,8 @@ class Terminal (object):
     def echo (self, string):
         self.__echo(string)
 
+        
 
-
-
-
-
-
+        
+        
+        
