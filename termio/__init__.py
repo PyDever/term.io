@@ -171,10 +171,13 @@ class Terminal (object):
     def read_raw (self):
         return self.__read_input_stream()
 
-    def read (self):
+    def read (self, prompt):
         bytes_x = 0
         try:
-            bytes_x = input()
+            bytes_x = input(
+                "\n"*self.cursor_location[1] + "    "*self.cursor_location[0]
+                + str(prompt) + "\n"*self.cursor_location[2]
+            )
         except KeyboardInterrupt:
             self.__echo("KeyboardInterrupt detected.")
         return bytes_x
@@ -187,20 +190,6 @@ class Terminal (object):
 
     def echo (self, string):
         self.__echo(string)
-
-term = Terminal()
-
-old_settings = term.get_attributes()
-
-term.fileno = sys.stdin.fileno()
-term.update_attributes(old_settings)
-
-new_settings = term.get_attributes()
-
-
-term.echo(str(new_settings))
-
-
 
 
 
